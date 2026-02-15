@@ -213,8 +213,6 @@ class KimiToolset:
         import fastmcp
         from fastmcp.mcp_config import MCPConfig, RemoteMCPServer
 
-        from kimi_cli.ui.shell.prompt import toast
-
         async def _check_oauth_tokens(server_url: str) -> bool:
             """Check if OAuth tokens exist for the server."""
             try:
@@ -228,13 +226,7 @@ class KimiToolset:
 
         def _toast_mcp(message: str) -> None:
             if in_background:
-                toast(
-                    message,
-                    duration=10.0,
-                    topic="mcp",
-                    immediate=True,
-                    position="right",
-                )
+                logger.info("MCP notice: {message}", message=message)
 
         oauth_servers: dict[str, str] = {}
 
