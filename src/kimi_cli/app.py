@@ -13,9 +13,8 @@ from pydantic import SecretStr
 
 from kimi_cli.agentspec import DEFAULT_AGENT_FILE
 from kimi_cli.auth.oauth import OAuthManager
-from kimi_cli.cli import InputFormat, OutputFormat
 from kimi_cli.config import Config, LLMModel, LLMProvider, load_config
-from kimi_cli.llm import augment_provider_with_env_vars, create_llm, model_display_name
+from kimi_cli.llm import augment_provider_with_env_vars, create_llm
 from kimi_cli.session import Session
 from kimi_cli.share import get_share_dir
 from kimi_cli.soul import run_soul
@@ -24,7 +23,6 @@ from kimi_cli.soul.context import Context
 from kimi_cli.soul.kimisoul import KimiSoul
 from kimi_cli.utils.aioqueue import QueueShutDown
 from kimi_cli.utils.logging import logger, redirect_stderr_to_logger
-from kimi_cli.utils.path import shorten_home
 from kimi_cli.wire import Wire, WireUISide
 from kimi_cli.wire.types import ContentPart, WireMessage
 
@@ -247,113 +245,6 @@ class KimiCLI:
                 stop_ui_loop.set()
                 # wait for the soul task to finish, or raise
                 await soul_task
-
-    async def run_shell(self, command: str | None = None) -> bool:
-        """Run the Kimi Code CLI instance with shell UI."""
-        from kimi_cli.ui.shell import Shell, WelcomeInfoItem
-
-        welcome_info = [
-            WelcomeInfoItem(
-                name="Directory", value=str(shorten_home(self._runtime.session.work_dir))
-            ),
-            WelcomeInfoItem(name="Session", value=self._runtime.session.id),
-        ]
-        if base_url := self._env_overrides.get("KIMI_BASE_URL"):
-            welcome_info.append(
-                WelcomeInfoItem(
-                    name="API URL",
-                    value=f"{base_url} (from KIMI_BASE_URL)",
-                    level=WelcomeInfoItem.Level.WARN,
-                )
-            )
-        if self._env_overrides.get("KIMI_API_KEY"):
-            welcome_info.append(
-                WelcomeInfoItem(
-                    name="API Key",
-                    value="****** (from KIMI_API_KEY)",
-                    level=WelcomeInfoItem.Level.WARN,
-                )
-            )
-        if not self._runtime.llm:
-            welcome_info.append(
-                WelcomeInfoItem(
-                    name="Model",
-                    value="not set, send /login to login",
-                    level=WelcomeInfoItem.Level.WARN,
-                )
-            )
-        elif "KIMI_MODEL_NAME" in self._env_overrides:
-            welcome_info.append(
-                WelcomeInfoItem(
-                    name="Model",
-                    value=f"{self._soul.model_name} (from KIMI_MODEL_NAME)",
-                    level=WelcomeInfoItem.Level.WARN,
-                )
-            )
-        else:
-            welcome_info.append(
-                WelcomeInfoItem(
-                    name="Model",
-                    value=model_display_name(self._soul.model_name),
-                    level=WelcomeInfoItem.Level.INFO,
-                )
-            )
-            if self._soul.model_name not in (
-                "kimi-for-coding",
-                "kimi-code",
-                "kimi-k2.5",
-                "kimi-k2-5",
-            ):
-                welcome_info.append(
-                    WelcomeInfoItem(
-                        name="Tip",
-                        value="send /login to use our latest kimi-k2.5 model",
-                        level=WelcomeInfoItem.Level.WARN,
-                    )
-                )
-        welcome_info.append(
-            WelcomeInfoItem(
-                name="\nTip",
-                value=(
-                    "Kimi Code Web UI, a GUI version of Kimi Code, is now in technical preview."
-                    "\n"
-                    "     Type /web to switch, or next time run `kimi web` directly."
-                ),
-                level=WelcomeInfoItem.Level.INFO,
-            )
-        )
-        async with self._env():
-            shell = Shell(self._soul, welcome_info=welcome_info)
-            return await shell.run(command)
-
-    async def run_print(
-        self,
-        input_format: InputFormat,
-        output_format: OutputFormat,
-        command: str | None = None,
-        *,
-        final_only: bool = False,
-    ) -> bool:
-        """Run the Kimi Code CLI instance with print UI."""
-        from kimi_cli.ui.print import Print
-
-        async with self._env():
-            print_ = Print(
-                self._soul,
-                input_format,
-                output_format,
-                self._runtime.session.context_file,
-                final_only=final_only,
-            )
-            return await print_.run(command)
-
-    async def run_acp(self) -> None:
-        """Run the Kimi Code CLI instance as ACP server."""
-        from kimi_cli.ui.acp import ACP
-
-        async with self._env():
-            acp = ACP(self._soul)
-            await acp.run()
 
     async def run_wire_stdio(self) -> None:
         """Run the Kimi Code CLI instance as Wire server over stdio."""
