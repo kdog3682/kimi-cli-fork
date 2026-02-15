@@ -3,9 +3,9 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import sys
 from typing import Any, cast
 
-import acp  # type: ignore[reportMissingTypeStubs]
 import pydantic
 from kosong.chat_provider import ChatProviderError
 from kosong.tooling import ToolError, ToolResult
@@ -49,12 +49,28 @@ from .jsonrpc import (
 )
 
 # Maximum buffer size for the asyncio StreamReader used for stdio.
-# Passed as the `limit` argument to `acp.stdio_streams`, this caps how much
+# Passed as the `limit` argument to stdio reader setup, this caps how much
 # data can be buffered when reading from stdin (e.g., large tool or model
 # outputs sent over JSON-RPC). A 100MB limit is large enough for typical
 # interactive use while still protecting the process from unbounded memory
 # growth or buffer-overrun errors when peers send unexpectedly large payloads.
 STDIO_BUFFER_LIMIT = 100 * 1024 * 1024
+
+
+async def _stdio_streams(limit: int) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+    """Create asyncio stdio streams without ACP dependency."""
+    loop = asyncio.get_running_loop()
+
+    reader = asyncio.StreamReader(limit=limit)
+    reader_protocol = asyncio.StreamReaderProtocol(reader)
+    await loop.connect_read_pipe(lambda: reader_protocol, sys.stdin)
+
+    write_transport, write_protocol = await loop.connect_write_pipe(
+        asyncio.streams.FlowControlMixin,
+        sys.stdout,
+    )
+    writer = asyncio.StreamWriter(write_transport, write_protocol, reader, loop)
+    return reader, writer
 
 
 class WireServer:
@@ -78,7 +94,7 @@ class WireServer:
     async def serve(self) -> None:
         logger.info("Starting Wire server on stdio")
 
-        self._reader, self._writer = await acp.stdio_streams(limit=STDIO_BUFFER_LIMIT)
+        self._reader, self._writer = await _stdio_streams(limit=STDIO_BUFFER_LIMIT)
         self._write_task = asyncio.create_task(self._write_loop())
         stop_event = asyncio.Event()
         loop = asyncio.get_running_loop()

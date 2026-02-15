@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/open-in", tags=["open-in"])
 class OpenInRequest(BaseModel):
     """Open path in a local app."""
 
-    app: Literal["finder", "cursor", "vscode", "iterm", "terminal", "antigravity"]
+    app: Literal["finder", "cursor", "iterm", "terminal", "antigravity"]
     path: str
 
 
@@ -111,8 +111,6 @@ async def open_in(request: OpenInRequest) -> OpenInResponse:
                     _run_command(["open", str(path)])
             case "cursor":
                 _open_app("Cursor", path)
-            case "vscode":
-                _open_app("Visual Studio Code", path, fallback="Code")
             case "antigravity":
                 _open_app("Antigravity", path)
             case "iterm":
