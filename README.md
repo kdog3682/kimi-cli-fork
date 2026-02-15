@@ -20,6 +20,30 @@ See [Getting Started](https://moonshotai.github.io/kimi-cli/en/guides/getting-st
 
 Kimi Code CLI now focuses on the web experience. Start it with `kimi` or `kimi web`, then use your browser to chat, inspect tool calls, and manage sessions.
 
+![](./docs/media/acp-integration.gif)
+
+### Zsh integration
+
+You can use Kimi Code CLI together with Zsh, to empower your shell experience with AI agent capabilities.
+
+Install the [zsh-kimi-cli](https://github.com/MoonshotAI/zsh-kimi-cli) plugin via:
+
+```sh
+git clone https://github.com/MoonshotAI/zsh-kimi-cli.git \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/kimi-cli
+```
+
+> [!NOTE]
+> If you are using a plugin manager other than Oh My Zsh, you may need to refer to the plugin's README for installation instructions.
+
+Then add `kimi-cli` to your Zsh plugin list in `~/.zshrc`:
+
+```sh
+plugins=(... kimi-cli)
+```
+
+After restarting Zsh, you can switch to agent mode by pressing `Ctrl-X`.
+
 ### MCP support
 
 Kimi Code CLI supports MCP (Model Context Protocol) tools.
